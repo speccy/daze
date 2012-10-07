@@ -1,0 +1,13 @@
+#!/bin/bash
+BG='#1c1c1c'
+FG='#9C9FA1'
+TODAY=$(expr `date +'%d'` + 0)
+MONTH=`date +'%m'`
+YEAR=`date +'%Y'`
+ 
+ (cal | sed -r -e "1 s/.*/^fg(#536979)&^fg()/" \
+               -e "s/(^| )($TODAY)($| )/\1^bg(#1c1c1c)^fg(#536979)\2^fg()^bg()\3/"
+                         
+                 ) \
+                        | dzen2 -p 60 -fn '-*-cure-*-*-*-*-*-*-*-*-*-*-*-*' -fg $FG -bg $BG -x 1800 -y 20 -w 116 -l 7 -sa c -e 'onstart=uncollapse;button3=exit'
+

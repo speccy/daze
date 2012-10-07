@@ -1,0 +1,34 @@
+#!/bin/sh
+#
+#
+#
+# (c) 2007, by Jochen Schweizer
+# with help from Robert Manea
+ 
+FN='-*-cure-*-*-*-*-*-*-*-*-*-*-*-*'
+BG='#1c1c1c'
+FG='#9C9FA1'
+W=100
+X=$(getcurpos | cut -c1-4)
+Y=20
+GH=7
+GW=50
+GFG='#9C9FA1'
+GBG='#1c1c1c'
+FW="mpc seek +5"      # 5 sec forwards
+RW="mpc seek -5"      # 5 sec backwards
+NEXTS="mpc next"      # previous song
+PREVS="mpc prev"      # next song
+TOGGS="mpc toggle"    # play/pause
+ 
+CAPTION="^i(/home/deifl/bitmaps/music.xbm)"
+ 
+MAXPOS="200"
+ 
+while true; do
+  POS=`mpc | sed -ne 's/^.*(\([0-9]*\)%).*$/\1/p'`
+  POSM="$POS $MAXPOS"
+#  echo "`mpc | sed -n '1p'`" | tr '\n' ' '
+  echo "$POSM" | gdbar -h $GH -w $GW -fg $GFG -bg $GBG
+  sleep 1;
+done | dzen2 -ta l -tw $W -x $X -y $Y -fg $FG -bg $BG -fn $FN -e "onstart:uncollapse;button3=exit"
