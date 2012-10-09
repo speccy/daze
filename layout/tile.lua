@@ -1,7 +1,7 @@
 local ipairs = ipairs
 local tonumber = tonumber
-local beautiful = beautiful
-local awful = awful
+local beautiful = require("beautiful")
+local awful = require("awful")
 local math = math
 
 --  combinations that work well: ugap = 15 tb = -2
