@@ -17,6 +17,7 @@ require the module (at the top of rc.lua)
     require("daze") 
 
 put this after your tags
+    
     --set the layout
     awful.layout.set(daze.layout.tile, tags[1][1]) 
     --set master window width in percentage
