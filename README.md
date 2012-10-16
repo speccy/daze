@@ -12,11 +12,15 @@ clone the repo
 additions to rc.lua
 ===================
 require the module (at the top of rc.lua)
+
     require("daze") 
 
-add this after your tags
+put this after your tags
+    --set the layout
     awful.layout.set(daze.layout.tile, tags[1][1]) 
+    --set master window width in percentage
     awful.tag.setmwfact(0.7, tags[1][1])
+    --set number of column windows
     awful.tag.setncol(1, tags[1][1])
 
 where x and y tags[x][y] are the workspace and screen you want the layout to work on, respectively
