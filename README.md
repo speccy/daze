@@ -7,6 +7,7 @@ instructions
 =============
 
 clone the repo
+
     git clone https://github.com/speccy/daze
 
 additions to rc.lua
