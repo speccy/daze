@@ -13,7 +13,7 @@ function register(mywidget)
     mywidget:buttons(awful.util.table.join(
     awful.button({ }, 1, 
     function()
-        awful.util.spawn_with_shell("/home/spectrum/.config/awesome/daze/widgets/scripts/dzen_music.sh")
+        awful.util.spawn_with_shell("/home/specy/.config/awesome/daze/widgets/scripts/dzen_music.sh")
 --        naughty.notify({
 --        text = "mpdinfogoeshere",
 --        timeout = 0,

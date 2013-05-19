@@ -16,9 +16,9 @@ function dmenu_launch()
     beautiful.bg_normal .. "' -nf '" .. beautiful.fg_normal ..     
                            "' -sb '" .. beautiful.bg_focus .. 
                            "' -sf '" .. beautiful.fg_focus ..
-                           "' -x '" .. "75" ..
-                           "' -y '" .. "1" ..
-                           "' -w '" .. "500" ..
+                           "' -x '" .. "0" ..
+                           "' -y '" .. "1070" ..
+                           "' -w '" .. "1920" ..
                            "' -fn '" .. beautiful.font_alt .. "'") 
 end
 

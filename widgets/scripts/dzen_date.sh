@@ -12,7 +12,7 @@ white="#d7d7d7"
 grey="#848484"
 pink="#FFA4E5"
 
-FONT="-*-cure-*-*-*-*-*-*-*-*-*-*-*-*"
+FONT="-*-lime-*-*-*-*-*-*-*-*-*-*-*-*"
 XPOS=1812
 YPOS="20"
 HEIGHT="15"

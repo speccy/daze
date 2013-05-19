@@ -1,149 +1,251 @@
+---------------------------------------------------------------------------
+-- @author Donald Ephraim Curtis &lt;dcurtis@cs.uiowa.edu&gt;
+-- @author Julien Danjou &lt;julien@danjou.info&gt;
+-- @copyright 2009 Donald Ephraim Curtis
+-- @copyright 2008 Julien Danjou
+-- @release v3.4.11
+---------------------------------------------------------------------------
+
+-- Grab environment we need
 local ipairs = ipairs
-local tonumber = tonumber
-local beautiful = require("beautiful")
-local awful = require("awful")
 local math = math
+local tag = require("awful.tag")
 
---  combinations that work well: ugap = 15 tb = -2
---                               ugap = 21 tb = -3
---                               ugap = 10 tb = 2
-
+--- Tiled layouts module for awful
 module("daze.layout.tile")
 
-name = "tile"
-function arrange(z)
-   
-    local ugap = tonumber(beautiful.useless_gap_width)
-    if ugap == nil then
-        ugap = 0
-    end
-    
-    local lower_window_height = tonumber(beautiful.lower_window_height)
-    if lower_window_height == nil then
-        lower_window_height = 0
-    end
-
-    local vertical_resolution = tonumber(beautiful.vertical_resolution)
-    if vertical_resolution == nil then
-        vertical_resolution = 1080 --assumes vertical resolution is 1080
+local function tile_group(cls, wa, orientation, fact, group)
+    -- get our orientation right
+    local height = "height"
+    local width = "width"
+    local x = "x"
+    local y = "y"
+    if orientation == "top" or orientation == "bottom" then
+        height = "width"
+        width = "height"
+        x = "y"
+        y = "x"
     end
 
-    local tb_border = tonumber(beautiful.vertical_border)
-    if tb_border == nil then
-        tb_border = 0
-    end
+    -- make this more generic (not just width)
+    available = wa[width] - (group.coord - wa[x])
 
-    local cp = tonumber(beautiful.outer_padding)
-    if cp == nil then
-        cp = 0
-    end
+    -- find our total values
+    local total_fact = 0
+    local min_fact = 1
+    local size = group.size
+    for c = group.first,group.last do
+        -- determine the width/height based on the size_hint
+        local i = c - group.first +1
+        local size_hints = cls[c].size_hints
+        local size_hint = size_hints["min_"..width] or size_hints["base_"..width] or 0
+        size_hint = size_hint + cls[c].border_width*2
+        size = math.max(size_hint, size)
 
-    -- screen area
-    local wa = z.workarea
-    local cls = z.clients
-    
-    -- main column width
-    local t = awful.tag.selected(z.screen)
-    local mwfact = awful.tag.getmwfact(t)
-
-    -- overlap if ncol = 1
-    local overlap_main = awful.tag.getncol(t)
-    
-    -- main column
-    if #cls > 0 then
-        local c = cls[#cls]
-        local g = {}
-        
-        wa.height = wa.height - cp*2
-        wa.width = wa.width - cp*2
-        wa.x = wa.x + cp
-        wa.y = wa.y + cp
-
-        local mwidth = math.floor(wa.width * mwfact)
-        local swidth = wa.width - mwidth
-
-        g.width = mwidth
-        g.height = wa.height
-        g.x = wa.x
-        g.y = wa.y
-        
-        if ugap > 0 then
-            g.width = g.width - ugap
-            g.height = g.height - 2 * ugap + 2*tb_border
-            g.x = g.x + ugap
-            g.y = g.y + ugap - tb_border
-
-        end
-        if #cls == 1 then
-            g.width = wa.width - 2 * ugap
+        -- calculate the height
+        if not fact[i] then
+            fact[i] = min_fact
         else
-            g.width = mwidth - ugap
+            min_fact = math.min(fact[i],min_fact)
         end
-        c:geometry(g)
-       
-        local lwh = lower_window_height
+        total_fact = total_fact + fact[i]
+    end
+    size = math.min(size, available)
 
-        -- slave client stacking
-        if #cls > 1 then
-            local sheight = math.floor(wa.height / (#cls -1))
-            if lwh == 0 then
-                for i = (#cls - 1),1,-1 do
-                    c = cls[i]
-                    g = {}
-                    g.width = swidth
-                    if i == (#cls - 1) then
-                        g.height = wa.height - (#cls - 2) * sheight
-                    else
-                        g.height = sheight
-                    end
-                    g.x = wa.x + mwidth
-                    g.y = wa.y + (i - 1) * sheight
-                    if ugap > 0 then
-                        g.width = g.width - 2 * ugap
-                        if i == 1 then
-                            g.height = g.height - 2 * ugap
-                            g.y = g.y + ugap
-                        else
-                            g.height = g.height - ugap
-                        end
-                        g.x = g.x + ugap
-                    end
-                    c:geometry(g)
-                end
+    local coord = wa[y]
+    local geom = {}
+    local used_size = 0
+    local unused = wa[height]
+    local stat_coord = wa[x]
+    --stat_coord = size
+    for c = group.first,group.last do
+        local i = c - group.first +1
+        geom[width] = size
+        geom[height] = math.floor(unused * fact[i] / total_fact)
+        geom[x] = group.coord
+        geom[y] = coord
+
+
+        coord = coord + geom[height]
+        unused = unused - geom[height]
+        total_fact = total_fact - fact[i]
+        used_size = math.max(used_size, geom[width])
+ 
+
+        -- Useless gap.
+        useless_gap = 25
+        if useless_gap > 0
+        then
+            -- Top and left clients are shrinked by two steps and
+            -- get moved away from the border. Other clients just
+            -- get shrinked in one direction.
+
+            top = false
+            left = false
+
+            if geom[y] == wa[y] then
+                top = true
+            end
+
+            if geom[x] == 0 or geom[x] == wa[x] then
+                left = true
+            end
+
+            if top then
+                geom[height] = geom[height] - 2 * useless_gap
+                geom[y] = geom[y] + useless_gap
             else
-                for i = (#cls - 1),1,-1 do
-                    local snheight = math.floor((wa.height - 2*(ugap - tb_border) - lwh) / (#cls - 2))
-                    c = cls[i]
-                    g = {}
-                    g.width = swidth
-                    if i == (#cls - 1) then
-                        g.height = wa.height - (#cls - 2) * snheight
-                    else
-                        g.height = snheight
-                    end
-                    g.x = wa.x + mwidth
-                    g.y = wa.y + (i - 1) * snheight
-                    if ugap > 0 then
-                        g.width = g.width - 2 * ugap
-                        if (i == (#cls - 1)) then
-                          g.height = lwh
-                          g.y = vertical_resolution - lwh - ugap + tb_border - cp
-                        --g.y = wa.y +  ugap * (i + 2) + snheight*(#cls - 2) - tb_border - lwh 
-                        elseif i == 1 then
-                            g.height = snheight - ugap
-                            g.y = wa.y + ugap - tb_border
---                            g.y = wa.y +  ugap * i + snheight*(#cls - 3) - tb_border
-                        else
-                            g.height = snheight - ugap
-                            g.y = g.y - tb_border + ugap
---                            g.y = g.y + ugap - tb_border
-                        end
-                        g.x = g.x + ugap
-                    end
-                    c:geometry(g)
-                end
+                geom[height] = geom[height] - useless_gap
+            end
+
+            if left then
+                geom[width] = geom[width] - 2 * useless_gap
+                geom[x] = geom[x] + useless_gap
+            else
+                geom[width] = geom[width] - useless_gap
             end
         end
-    end
+        -- End of useless gap.
+
+        geom = cls[c]:geometry(geom)
+   end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    return used_size
 end
 
+local function tile(param, orientation)
+    local t = tag.selected(param.screen)
+    orientation = orientation or "right"
+
+    -- this handles are different orientations
+    local height = "height"
+    local width = "width"
+    local x = "x"
+    local y = "y"
+    if orientation == "top" or orientation == "bottom" then
+        height = "width"
+        width = "height"
+        x = "y"
+        y = "x"
+    end
+
+    local cls = param.clients
+    local nmaster = math.min(tag.getnmaster(t), #cls)
+    local nother = math.max(#cls - nmaster,0)
+
+    local mwfact = tag.getmwfact(t)
+    local wa = param.workarea
+    local ncol = tag.getncol(t)
+
+    local data = tag.getdata(t).windowfact
+
+    if not data then
+        data = {}
+        tag.getdata(t).windowfact = data
+    end
+
+    local coord = wa[x]
+    local place_master = true
+    if orientation == "left" or orientation == "top" then
+        -- if we are on the left or top we need to render the other windows first
+        place_master = false
+    end
+
+    -- this was easier than writing functions because there is a lot of data we need
+    for d = 1,2 do
+        if place_master and nmaster > 0 then
+            local size = wa[width]
+            if nother > 0 then
+                size = math.min(wa[width] * mwfact, wa[width] - (coord - wa[x]))
+            end
+            if not data[0] then
+                data[0] = {}
+            end
+            coord = coord + tile_group(cls, wa, orientation, data[0], {first=1, last=nmaster, coord = coord, size = size})
+        end
+
+        if not place_master and nother > 0 then
+            local last = nmaster
+
+            -- we have to modify the work area size to consider left and top views
+            local wasize = wa[width]
+            if nmaster > 0 and (orientation == "left" or orientation == "top") then
+                wasize = wa[width] - wa[width]*mwfact
+            end
+            for i = 1,ncol do
+                -- Try to get equal width among remaining columns
+                local size = math.min( (wasize - (coord - wa[x])) / (ncol - i + 1) )
+                local first = last + 1
+                last = last + math.floor((#cls - last)/(ncol - i + 1))
+                -- tile the column and update our current x coordinate
+                if not data[i] then
+                    data[i] = {}
+                end
+                coord = coord + tile_group(cls, wa, orientation, data[i], { first = first, last = last, coord = coord, size = size })
+            end
+        end
+        place_master = not place_master
+    end
+
+
+
+
+
+
+
+
+
+
+
+
+end
+
+right = {}
+right.name = "tile"
+right.arrange = tile
+
+--- The main tile algo, on left.
+-- @param screen The screen number to tile.
+left = {}
+left.name = "tileleft"
+function left.arrange(p)
+    return tile(p, "left")
+end
+
+--- The main tile algo, on bottom.
+-- @param screen The screen number to tile.
+bottom = {}
+bottom.name = "tilebottom"
+function bottom.arrange(p)
+    return tile(p, "bottom")
+end
+
+--- The main tile algo, on top.
+-- @param screen The screen number to tile.
+top = {}
+top.name = "tiletop"
+function top.arrange(p)
+    return tile(p, "top")
+end
+
+arrange = right.arrange
+name = right.name
